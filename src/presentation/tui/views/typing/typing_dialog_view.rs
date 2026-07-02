@@ -10,7 +10,12 @@ use ratatui::{
 pub struct TypingDialogView;
 
 impl TypingDialogView {
-    pub fn render(frame: &mut Frame, skips_remaining: usize, colors: &Colors) {
+    pub fn render(
+        frame: &mut Frame,
+        skips_remaining: usize,
+        colors: &Colors,
+        is_word_mode: bool,
+    ) {
         // Calculate dialog size and position
         let area = frame.area();
         let dialog_width = 50.min(area.width - 4);
@@ -26,11 +31,25 @@ impl TypingDialogView {
         // Clear the area behind the dialog
         frame.render_widget(Clear, dialog_area);
 
+        let (title, choose, skip_label, no_skips_label, quit_label, back_label) = if is_word_mode
+        {
+            ("游戏选项", "选择一个操作:", "跳过", "无跳过次数", "退出", "返回游戏")
+        } else {
+            (
+                "Game Options",
+                "Choose an option:",
+                "Skip challenge",
+                "No skips remaining",
+                "Quit (fail)",
+                "Back to game",
+            )
+        };
+
         // Create dialog content
         let dialog_lines = vec![
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Choose an option:",
+                choose,
                 Style::default()
                     .fg(colors.text())
                     .add_modifier(Modifier::BOLD),
@@ -49,12 +68,12 @@ impl TypingDialogView {
                 },
                 if skips_remaining > 0 {
                     Span::styled(
-                        format!("Skip challenge ({})", skips_remaining),
+                        format!("{skip_label} ({})", skips_remaining),
                         Style::default().fg(colors.text()),
                     )
                 } else {
                     Span::styled(
-                        "No skips remaining",
+                        no_skips_label,
                         Style::default().fg(colors.text_secondary()),
                     )
                 },
@@ -66,7 +85,7 @@ impl TypingDialogView {
                         .fg(colors.error())
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled("Quit (fail)", Style::default().fg(colors.text())),
+                Span::styled(quit_label, Style::default().fg(colors.text())),
             ]),
             Line::from(vec![
                 Span::styled(
@@ -75,7 +94,7 @@ impl TypingDialogView {
                         .fg(colors.key_action())
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled("Back to game", Style::default().fg(colors.text())),
+                Span::styled(back_label, Style::default().fg(colors.text())),
             ]),
             Line::from(""),
         ];
@@ -84,7 +103,7 @@ impl TypingDialogView {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Game Options")
+                    .title(title)
                     .title_style(
                         Style::default()
                             .fg(colors.key_action())

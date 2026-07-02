@@ -2,6 +2,7 @@ use crate::domain::events::presentation_events::NavigateTo;
 use crate::domain::events::EventBusInterface;
 use crate::domain::models::TotalResult;
 use crate::domain::services::scoring::{TotalCalculator, TotalTracker, TotalTrackerInterface};
+use crate::domain::services::session_manager_service::SessionManagerInterface;
 use crate::domain::services::theme_service::ThemeServiceInterface;
 use crate::presentation::tui::views::{AsciiScoreView, SharingView, StatisticsView};
 use crate::presentation::tui::{Screen, ScreenDataProvider, ScreenType, UpdateStrategy};
@@ -74,6 +75,8 @@ pub struct TotalSummaryScreen {
     theme_service: Arc<dyn ThemeServiceInterface>,
     #[shaku(inject)]
     total_tracker: Arc<dyn TotalTrackerInterface>,
+    #[shaku(inject)]
+    session_manager: Arc<dyn SessionManagerInterface>,
 }
 
 impl TotalSummaryScreen {
@@ -81,6 +84,7 @@ impl TotalSummaryScreen {
         event_bus: Arc<dyn EventBusInterface>,
         theme_service: Arc<dyn ThemeServiceInterface>,
         total_tracker: Arc<dyn TotalTrackerInterface>,
+        session_manager: Arc<dyn SessionManagerInterface>,
     ) -> Self {
         Self {
             displayed: RwLock::new(false),
@@ -88,6 +92,7 @@ impl TotalSummaryScreen {
             event_bus,
             theme_service,
             total_tracker,
+            session_manager,
         }
     }
 }
@@ -104,10 +109,12 @@ impl shaku::Provider<crate::presentation::di::AppModule> for TotalSummaryScreenP
         let event_bus: std::sync::Arc<dyn EventBusInterface> = module.resolve();
         let theme_service: Arc<dyn ThemeServiceInterface> = module.resolve();
         let total_tracker: Arc<dyn TotalTrackerInterface> = module.resolve();
+        let session_manager: Arc<dyn SessionManagerInterface> = module.resolve();
         Ok(Box::new(TotalSummaryScreen::new(
             event_bus,
             theme_service,
             total_tracker,
+            session_manager,
         )))
     }
 }
@@ -203,9 +210,12 @@ impl Screen for TotalSummaryScreen {
                 ])
                 .split(area);
 
+            let is_word_mode = self.session_manager.is_word_mode();
+
             // Title
+            let title_text = if is_word_mode { "=== 总览 ===" } else { "=== TOTAL SUMMARY ===" };
             let title = Paragraph::new(Line::from(vec![Span::styled(
-                "=== TOTAL SUMMARY ===",
+                title_text,
                 Style::default()
                     .fg(colors.info())
                     .add_modifier(Modifier::BOLD),
@@ -217,10 +227,10 @@ impl Screen for TotalSummaryScreen {
             AsciiScoreView::render(frame, chunks[3], total_result.total_score, &colors);
 
             // Statistics
-            StatisticsView::render(frame, chunks[5], total_result, &colors);
+            StatisticsView::render(frame, chunks[5], total_result, &colors, is_word_mode);
 
             // Options
-            SharingView::render_exit_options(frame, chunks[7], &colors);
+            SharingView::render_exit_options(frame, chunks[7], &colors, is_word_mode);
         }
         Ok(())
     }

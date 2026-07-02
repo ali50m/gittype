@@ -212,7 +212,12 @@ impl SharingView {
         frame.render_widget(Paragraph::new(exit).alignment(Alignment::Center), chunks[7]);
     }
 
-    pub fn render_exit_options(frame: &mut Frame, area: ratatui::layout::Rect, colors: &Colors) {
+    pub fn render_exit_options(
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        colors: &Colors,
+        is_word_mode: bool,
+    ) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -224,9 +229,15 @@ impl SharingView {
             ])
             .split(area);
 
+        let (thanks_text, share_label, exit_label) = if is_word_mode {
+            ("感谢使用 GitType！", "分享结果", "退出")
+        } else {
+            ("Thanks for playing GitType!", "Share Result", "Exit")
+        };
+
         // Thanks message
         let thanks = Paragraph::new(Line::from(vec![Span::styled(
-            "Thanks for playing GitType!",
+            thanks_text,
             Style::default()
                 .fg(colors.success())
                 .add_modifier(Modifier::BOLD),
@@ -245,7 +256,7 @@ impl SharingView {
         // Share option
         let share = Line::from(vec![
             Span::styled("[S]", Style::default().fg(colors.success())),
-            Span::styled(" Share Result", Style::default().fg(colors.text())),
+            Span::styled(format!(" {share_label}"), Style::default().fg(colors.text())),
         ]);
         frame.render_widget(
             Paragraph::new(share).alignment(Alignment::Center),
@@ -255,7 +266,7 @@ impl SharingView {
         // Exit option
         let exit = Line::from(vec![
             Span::styled("[ESC]", Style::default().fg(colors.error())),
-            Span::styled(" Exit", Style::default().fg(colors.text())),
+            Span::styled(format!(" {exit_label}"), Style::default().fg(colors.text())),
         ]);
         frame.render_widget(Paragraph::new(exit).alignment(Alignment::Center), chunks[4]);
     }

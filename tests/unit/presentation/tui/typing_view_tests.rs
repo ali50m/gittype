@@ -22,6 +22,10 @@ impl SessionManagerInterface for FakeSessionManager {
     fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
         Ok((1, 3))
     }
+
+    fn is_word_mode(&self) -> bool {
+        false
+    }
 }
 
 fn default_colors() -> Colors {

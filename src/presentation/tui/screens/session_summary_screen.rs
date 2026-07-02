@@ -261,7 +261,8 @@ impl Screen for SessionSummaryScreen {
                 ])
                 .split(area);
 
-            SessionSummaryHeaderView::render(frame, chunks[1], &colors);
+            let is_word_mode = self.session_manager.is_word_mode();
+            SessionSummaryHeaderView::render(frame, chunks[1], &colors, is_word_mode);
             RankView::render(frame, chunks[2], &best_rank, session_result.session_score);
             ScoreView::render(
                 frame,
@@ -270,9 +271,10 @@ impl Screen for SessionSummaryScreen {
                 &best_rank,
                 best_status.as_ref(),
                 &colors,
+                is_word_mode,
             );
-            SummaryView::render(frame, chunks[6], session_result, &colors);
-            OptionsView::render(frame, chunks[8], &colors);
+            SummaryView::render(frame, chunks[6], session_result, &colors, is_word_mode);
+            OptionsView::render(frame, chunks[8], &colors, is_word_mode);
         }
         Ok(())
     }

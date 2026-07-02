@@ -16,6 +16,7 @@ impl StatisticsView {
         area: ratatui::layout::Rect,
         total_summary: &TotalResult,
         colors: &Colors,
+        is_word_mode: bool,
     ) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -27,22 +28,31 @@ impl StatisticsView {
             ])
             .split(area);
 
+        let (overall_label, sessions_label, completed_label, stages_label,
+             keystrokes_label, mistakes_label, skipped_label,
+             best_label, worst_label) = if is_word_mode {
+            ("总计", "练习次数", "已完成", "单词数", "击键", "错误", "跳过", "最佳", "最差")
+        } else {
+            ("Overall", "Total Sessions", "Completed", "Stages",
+             "Total Keystrokes", "Mistakes", "Skipped", "Best Session", "Worst")
+        };
+
         // Line 1: Overall CPM, WPM, Accuracy
         let line1 = Line::from(vec![
-            Span::styled("Overall ", Style::default().fg(colors.text())),
-            Span::styled("CPM: ", Style::default().fg(colors.cpm_wpm())),
+            Span::styled(format!("{overall_label} "), Style::default().fg(colors.text())),
+            Span::styled(format!("{}: ", if is_word_mode { "字/分" } else { "CPM" }), Style::default().fg(colors.cpm_wpm())),
             Span::styled(
                 format!("{:.1}", total_summary.overall_cpm),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled("WPM: ", Style::default().fg(colors.cpm_wpm())),
+            Span::styled(format!("{}: ", if is_word_mode { "词/分" } else { "WPM" }), Style::default().fg(colors.cpm_wpm())),
             Span::styled(
                 format!("{:.1}", total_summary.overall_wpm),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled("Accuracy: ", Style::default().fg(colors.accuracy())),
+            Span::styled(format!("{}: ", if is_word_mode { "正确率" } else { "Accuracy" }), Style::default().fg(colors.accuracy())),
             Span::styled(
                 format!("{:.1}%", total_summary.overall_accuracy),
                 Style::default().fg(colors.text()),
@@ -55,20 +65,19 @@ impl StatisticsView {
 
         // Line 2: Sessions and Stages
         let line2 = Line::from(vec![
-            Span::styled("Total ", Style::default().fg(colors.text())),
-            Span::styled("Sessions: ", Style::default().fg(colors.stage_info())),
+            Span::styled(format!("{sessions_label}: "), Style::default().fg(colors.stage_info())),
             Span::styled(
                 format!("{}", total_summary.total_sessions_attempted),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled("Completed: ", Style::default().fg(colors.success())),
+            Span::styled(format!("{completed_label}: "), Style::default().fg(colors.success())),
             Span::styled(
                 format!("{}", total_summary.total_sessions_completed),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled("Stages: ", Style::default().fg(colors.stage_info())),
+            Span::styled(format!("{stages_label}: "), Style::default().fg(colors.stage_info())),
             Span::styled(
                 format!(
                     "{}/{}",
@@ -84,20 +93,19 @@ impl StatisticsView {
 
         // Line 3: Keystrokes, Mistakes, Skipped
         let line3 = Line::from(vec![
-            Span::styled("Total ", Style::default().fg(colors.text())),
-            Span::styled("Keystrokes: ", Style::default().fg(colors.stage_info())),
+            Span::styled(format!("{keystrokes_label}: "), Style::default().fg(colors.stage_info())),
             Span::styled(
                 format!("{}", total_summary.total_keystrokes),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled("Mistakes: ", Style::default().fg(colors.error())),
+            Span::styled(format!("{mistakes_label}: "), Style::default().fg(colors.error())),
             Span::styled(
                 format!("{}", total_summary.total_mistakes),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled("Skipped: ", Style::default().fg(colors.warning())),
+            Span::styled(format!("{skipped_label}: "), Style::default().fg(colors.warning())),
             Span::styled(
                 format!("{}", total_summary.total_stages_skipped),
                 Style::default().fg(colors.text()),
@@ -110,7 +118,7 @@ impl StatisticsView {
 
         // Line 4: Best/Worst sessions
         let line4 = Line::from(vec![
-            Span::styled("Best Session: ", Style::default().fg(colors.text())),
+            Span::styled(format!("{best_label}: "), Style::default().fg(colors.text())),
             Span::styled(
                 format!("{:.0} CPM", total_summary.best_session_wpm * 5.0),
                 Style::default().fg(colors.cpm_wpm()),
@@ -120,7 +128,7 @@ impl StatisticsView {
                 format!("{:.1}%", total_summary.best_session_accuracy),
                 Style::default().fg(colors.accuracy()),
             ),
-            Span::styled(" | Worst: ", Style::default().fg(colors.text())),
+            Span::styled(format!(" | {worst_label}: "), Style::default().fg(colors.text())),
             Span::styled(
                 format!("{:.0} CPM", total_summary.worst_session_wpm * 5.0),
                 Style::default().fg(colors.cpm_wpm()),

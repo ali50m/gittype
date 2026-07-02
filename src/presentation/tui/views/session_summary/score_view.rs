@@ -40,6 +40,7 @@ impl ScoreView {
         best_rank: &Rank,
         best_status: Option<&BestStatus>,
         colors: &Colors,
+        is_word_mode: bool,
     ) -> usize {
         let (updated_best_type, comparison_score) = if let Some(status) = best_status {
             // For comparison, always use the most relevant previous score
@@ -139,8 +140,9 @@ impl ScoreView {
             .split(area);
 
         // Render score label
+        let score_label_text = if is_word_mode { "练习得分" } else { "SESSION SCORE" };
         let score_label = Paragraph::new(Line::from(vec![Span::styled(
-            "SESSION SCORE",
+            score_label_text,
             Style::default()
                 .fg(colors.score())
                 .add_modifier(Modifier::BOLD),
@@ -152,7 +154,8 @@ impl ScoreView {
 
         // Render best label if present
         if let Some(best_type) = updated_best_type {
-            let best_label = format!("*** {} BEST ***", best_type);
+            let best_suffix = if is_word_mode { " 最佳" } else { " BEST" };
+            let best_label = format!("*** {}{} ***", best_type, best_suffix);
             let best_widget = Paragraph::new(Line::from(vec![Span::styled(
                 best_label,
                 Style::default()

@@ -6,12 +6,24 @@ use gittype::domain::models::color_mode::ColorMode;
 use gittype::domain::models::theme::Theme;
 use gittype::domain::models::SessionResult;
 use gittype::domain::services::scoring::{TotalTracker, TotalTrackerInterface};
+use gittype::domain::services::session_manager_service::SessionManagerInterface;
 use gittype::domain::services::theme_service::{ThemeService, ThemeServiceInterface};
 use gittype::presentation::tui::screens::total_summary_screen::{
     TotalSummaryScreen, TotalSummaryScreenData, TotalSummaryScreenDataProvider,
 };
 use gittype::presentation::tui::{Screen, ScreenDataProvider};
 use std::sync::Arc;
+
+struct FakeSessionManager;
+impl SessionManagerInterface for FakeSessionManager {
+    fn as_any(&self) -> &dyn std::any::Any { self }
+    fn get_stage_info(&self) -> gittype::Result<(usize, usize)> { Ok((1, 1)) }
+    fn is_word_mode(&self) -> bool { false }
+}
+
+fn fake_sm() -> Arc<dyn SessionManagerInterface> {
+    Arc::new(FakeSessionManager)
+}
 
 screen_snapshot_test!(
     test_total_summary_screen_snapshot,
@@ -22,7 +34,8 @@ screen_snapshot_test!(
             Theme::default(),
             ColorMode::Dark
         )) as Arc<dyn ThemeServiceInterface>,
-        Arc::new(TotalTracker::default()) as Arc<dyn TotalTrackerInterface>
+        Arc::new(TotalTracker::default()) as Arc<dyn TotalTrackerInterface>,
+        fake_sm(),
     ),
     provider = MockTotalSummaryDataProvider
 );
@@ -36,7 +49,7 @@ fn create_total_summary_screen(
         ColorMode::Dark,
     )) as Arc<dyn ThemeServiceInterface>;
     let total_tracker: Arc<dyn TotalTrackerInterface> = Arc::new(TotalTracker::default());
-    TotalSummaryScreen::new(event_bus, theme_service, total_tracker)
+    TotalSummaryScreen::new(event_bus, theme_service, total_tracker, fake_sm())
 }
 
 // Event-producing key tests
@@ -90,7 +103,8 @@ screen_basic_methods_test!(
             Theme::default(),
             ColorMode::Dark
         )) as Arc<dyn ThemeServiceInterface>,
-        Arc::new(TotalTracker::default()) as Arc<dyn TotalTrackerInterface>
+        Arc::new(TotalTracker::default()) as Arc<dyn TotalTrackerInterface>,
+        fake_sm(),
     ),
     gittype::presentation::tui::ScreenType::TotalSummary,
     false,

@@ -52,6 +52,7 @@ fn render_score_with_status(
                 &rank,
                 best_status,
                 &colors,
+                false,
             );
         })
         .unwrap();

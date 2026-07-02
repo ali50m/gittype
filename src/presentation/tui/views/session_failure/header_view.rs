@@ -10,9 +10,19 @@ use ratatui::{
 pub struct HeaderView;
 
 impl HeaderView {
-    pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, colors: &Colors) {
+    pub fn render(
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        colors: &Colors,
+        is_word_mode: bool,
+    ) {
+        let title = if is_word_mode {
+            "=== 练习中断 ==="
+        } else {
+            "=== SESSION FAILED ==="
+        };
         let header = Paragraph::new(Line::from(vec![Span::styled(
-            "=== SESSION FAILED ===",
+            title,
             Style::default()
                 .fg(colors.error())
                 .add_modifier(Modifier::BOLD),

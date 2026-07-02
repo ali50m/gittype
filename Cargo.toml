@@ -103,5 +103,10 @@ harness = false
 name = "source_code_parser_bench"
 harness = false
 
-
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Link-time optimization
+codegen-units = 1   # Better optimization, slower compile
+panic = "abort"     # Smaller binary, skip unwind
+strip = true        # Strip debug symbols
 

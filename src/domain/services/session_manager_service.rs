@@ -48,11 +48,16 @@ pub struct SessionManager {
 pub trait SessionManagerInterface: shaku::Interface {
     fn as_any(&self) -> &dyn std::any::Any;
     fn get_stage_info(&self) -> Result<(usize, usize)>;
+    fn is_word_mode(&self) -> bool;
 }
 
 impl SessionManagerInterface for SessionManager {
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+
+    fn is_word_mode(&self) -> bool {
+        self.config.lock().unwrap().game_mode == GameMode::Sequential
     }
 
     fn get_stage_info(&self) -> Result<(usize, usize)> {
@@ -588,6 +593,10 @@ impl SessionManager {
             self.total_tracker.record(session_result);
         }
         Ok(())
+    }
+
+    pub fn record_to_session_tracker(&self, stage_result: StageResult) {
+        self.session_tracker.record(stage_result);
     }
 
     pub fn reset(&self) {

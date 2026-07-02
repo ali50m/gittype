@@ -143,6 +143,15 @@ impl TypingScreen {
                     source_path: challenge.source_file_path.clone().unwrap_or_default(),
                 });
 
+            // In word mode, skip countdown — publish StageStarted immediately
+            if is_word_mode {
+                self.event_bus
+                    .as_event_bus()
+                    .publish(DomainEvent::StageStarted {
+                        start_time: std::time::Instant::now(),
+                    });
+            }
+
             Ok(true)
         } else {
             Ok(false)

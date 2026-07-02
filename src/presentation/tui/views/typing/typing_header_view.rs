@@ -31,9 +31,11 @@ impl TypingHeaderView {
         colors: &Colors,
         stage_info: Option<(usize, usize)>,
     ) {
-        let header_text = if let Some(challenge) = challenge {
-            let is_word_mode = challenge.language.as_deref() == Some("word");
+        let is_word_mode = challenge
+            .map(|c| c.language.as_deref() == Some("word"))
+            .unwrap_or(false);
 
+        let header_text = if let Some(challenge) = challenge {
             let base_title = if is_word_mode {
                 let deck = challenge.source_file_path.as_deref().unwrap_or("Words");
                 match stage_info {
@@ -85,11 +87,13 @@ impl TypingHeaderView {
             )])
         };
 
+        let header_title = if is_word_mode { "单词练习" } else { "Challenge" };
+
         let header = Paragraph::new(vec![header_text]).block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(colors.border()))
-                .title("Challenge")
+                .title(header_title)
                 .title_style(Style::default().fg(colors.border()))
                 .padding(ratatui::widgets::Padding::horizontal(1)),
         );

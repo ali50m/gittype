@@ -142,6 +142,10 @@ impl SessionManagerInterface for NonConcreteSessionManager {
     fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
         Ok((1, 1))
     }
+
+    fn is_word_mode(&self) -> bool {
+        false
+    }
 }
 
 fn create_session_summary_share_screen_with_session_manager(

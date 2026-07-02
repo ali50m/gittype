@@ -30,7 +30,7 @@ fn render_dialog(skips_remaining: usize) -> String {
     let mut terminal = Terminal::new(backend).unwrap();
 
     terminal
-        .draw(|frame| TypingDialogView::render(frame, skips_remaining, &colors))
+        .draw(|frame| TypingDialogView::render(frame, skips_remaining, &colors, false))
         .unwrap();
 
     buffer_text(terminal.backend().buffer())

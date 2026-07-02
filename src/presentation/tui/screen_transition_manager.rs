@@ -161,6 +161,7 @@ impl ScreenTransitionManager {
                 tracker.record(StageInput::Fail);
                 let stage_result = StageCalculator::calculate(tracker);
                 drop(tracker_guard);
+                sm.record_to_session_tracker(stage_result.clone());
                 sm.reduce(SessionAction::CompleteStage(stage_result))?;
             } else {
                 drop(tracker_guard);

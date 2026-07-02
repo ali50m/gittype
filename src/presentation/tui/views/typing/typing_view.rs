@@ -88,6 +88,10 @@ impl TypingView {
             colors,
         );
 
+        let is_word_mode = challenge
+            .map(|c| c.language.as_deref() == Some("word"))
+            .unwrap_or(false);
+
         // Metrics
         if let Some(instance) = session_manager.as_any().downcast_ref::<SessionManager>() {
             if let Some(stage_tracker) = instance.get_current_stage_tracker() {
@@ -100,6 +104,7 @@ impl TypingView {
                     &stage_tracker,
                     typing_core,
                     colors,
+                    is_word_mode,
                 );
             }
         }
@@ -113,6 +118,7 @@ impl TypingView {
             typing_core,
             typing_core.text_to_display().chars().count(),
             colors,
+            is_word_mode,
         );
 
         // ESC Options
@@ -122,9 +128,10 @@ impl TypingView {
             width: 15,
             height: 1,
         };
+        let esc_label = if is_word_mode { " 菜单" } else { " Options" };
         let esc_text = Paragraph::new(vec![Line::from(vec![
             Span::styled("[ESC]", Style::default().fg(colors.key_action())),
-            Span::styled(" Options", Style::default().fg(colors.text())),
+            Span::styled(esc_label, Style::default().fg(colors.text())),
         ])]);
         frame.render_widget(esc_text, esc_area);
 
@@ -159,7 +166,7 @@ impl TypingView {
 
         // Dialog
         if dialog_shown {
-            TypingDialogView::render(frame, skips_remaining, colors);
+            TypingDialogView::render(frame, skips_remaining, colors, is_word_mode);
         }
     }
 }

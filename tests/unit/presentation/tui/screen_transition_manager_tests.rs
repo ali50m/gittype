@@ -603,6 +603,10 @@ mod tests {
         fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
             Ok((1, 1))
         }
+
+        fn is_word_mode(&self) -> bool {
+            false
+        }
     }
 
     fn fake_session_manager() -> Arc<dyn SessionManagerInterface> {
