@@ -15,6 +15,7 @@ use crate::domain::services::stage_builder_service::StageRepository as StageBuil
 use crate::domain::services::theme_service::ThemeService;
 use crate::domain::services::version_service::VersionService;
 use crate::domain::stores::{ChallengeStore, RepositoryStore, SessionStore};
+use crate::infrastructure::audio::AudioPlayer;
 use crate::infrastructure::database::daos::{ChallengeDao, RepositoryDao, SessionDao, StageDao};
 use crate::infrastructure::database::database::Database;
 use crate::infrastructure::http::github_api_client::GitHubApiClientFactoryImpl;
@@ -44,6 +45,7 @@ shaku::module! {
             RepositoryDao,
             SessionDao,
             StageDao,
+            AudioPlayer,
             EventBus,
             TerminalComponent,
             ChallengeStore,

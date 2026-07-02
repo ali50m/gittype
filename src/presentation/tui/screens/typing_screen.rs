@@ -3,6 +3,7 @@ use crate::domain::events::presentation_events::NavigateTo;
 use crate::domain::events::EventBusInterface;
 use crate::domain::models::typing::{CodeContext, InputResult, ProcessingOptions};
 use crate::domain::models::{Challenge, Countdown, GitRepository};
+use crate::domain::services::audio_service::AudioServiceInterface;
 use crate::domain::services::context_loader;
 use crate::domain::services::session_manager_service::SessionManagerInterface;
 use crate::domain::services::theme_service::ThemeServiceInterface;
@@ -45,6 +46,8 @@ pub struct TypingScreen {
     repository_store: Arc<dyn RepositoryStoreInterface>,
     #[shaku(inject)]
     session_manager: Arc<dyn SessionManagerInterface>,
+    #[shaku(inject)]
+    audio_service: Arc<dyn AudioServiceInterface>,
 }
 
 pub enum SessionState {
@@ -64,6 +67,7 @@ impl TypingScreen {
         theme_service: Arc<dyn ThemeServiceInterface>,
         repository_store: Arc<dyn RepositoryStoreInterface>,
         session_manager: Arc<dyn SessionManagerInterface>,
+        audio_service: Arc<dyn AudioServiceInterface>,
     ) -> Self {
         let git_repository = repository_store.get_repository();
 
@@ -80,6 +84,7 @@ impl TypingScreen {
             theme_service,
             repository_store,
             session_manager,
+            audio_service,
         }
     }
 
@@ -145,6 +150,10 @@ impl TypingScreen {
 
             // In word mode, skip countdown — publish StageStarted immediately
             if is_word_mode {
+                if let Some(ref word) = challenge.word {
+                    self.audio_service.play_word(word);
+                }
+
                 self.event_bus
                     .as_event_bus()
                     .publish(DomainEvent::StageStarted {
@@ -457,11 +466,13 @@ impl shaku::Provider<crate::presentation::di::AppModule> for TypingScreenProvide
         let theme_service: Arc<dyn ThemeServiceInterface> = module.resolve();
         let repository_store: Arc<dyn RepositoryStoreInterface> = module.resolve();
         let session_manager: Arc<dyn SessionManagerInterface> = module.resolve();
+        let audio_service: Arc<dyn AudioServiceInterface> = module.resolve();
         Ok(Box::new(TypingScreen::new(
             event_bus,
             theme_service,
             repository_store,
             session_manager,
+            audio_service,
         )))
     }
 }

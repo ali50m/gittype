@@ -287,6 +287,7 @@ impl ChallengeRepository {
             language: pointer.language.clone(),
             comment_ranges: pointer.comment_ranges.clone(),
             difficulty_level: pointer.difficulty_level,
+            word: None,
         })
     }
 

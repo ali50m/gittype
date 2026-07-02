@@ -1,4 +1,5 @@
 pub mod analytics_service;
+pub mod audio_service;
 pub mod challenge_generator;
 pub mod config_service;
 pub mod context_loader;

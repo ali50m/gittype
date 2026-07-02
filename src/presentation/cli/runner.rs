@@ -27,7 +27,11 @@ pub fn run_cli(cli: Cli) -> Result<()> {
             run_cache_command(cache_command, challenge_repository)
         }
         Some(Commands::Repo { repo_command }) => run_repo_command(repo_command),
-        Some(Commands::Word { file, shuffle }) => run_word_session(file.clone(), *shuffle),
+        Some(Commands::Word {
+            file,
+            shuffle,
+            audio_url,
+        }) => run_word_session(file.clone(), *shuffle, audio_url.clone()),
         Some(Commands::Trending {
             language,
             repo_name,

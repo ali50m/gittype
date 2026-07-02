@@ -12,6 +12,7 @@ pub struct Challenge {
     pub language: Option<String>,
     pub comment_ranges: Vec<(usize, usize)>, // Character-based ranges for comments
     pub difficulty_level: Option<DifficultyLevel>,
+    pub word: Option<String>,
 }
 
 impl Challenge {
@@ -25,6 +26,7 @@ impl Challenge {
             language: None,
             comment_ranges: Vec::new(),
             difficulty_level: None,
+            word: None,
         }
     }
 
@@ -52,6 +54,11 @@ impl Challenge {
 
     pub fn with_comment_ranges(mut self, comment_ranges: Vec<(usize, usize)>) -> Self {
         self.comment_ranges = comment_ranges;
+        self
+    }
+
+    pub fn with_word(mut self, word: String) -> Self {
+        self.word = Some(word);
         self
     }
 
@@ -84,6 +91,7 @@ impl Challenge {
             language,
             difficulty_level: difficulty,
             comment_ranges: chunk.comment_ranges.clone(),
+            word: None,
         })
     }
 
@@ -111,6 +119,7 @@ impl Challenge {
             language,
             difficulty_level: difficulty,
             comment_ranges: comment_ranges.to_vec(),
+            word: None,
         }
     }
 

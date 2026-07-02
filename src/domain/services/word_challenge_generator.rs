@@ -68,7 +68,8 @@ impl WordChallengeGenerator {
             Challenge::new(uuid::Uuid::new_v4().to_string(), display)
                 .with_language("word".to_string())
                 .with_comment_ranges(comment_ranges)
-                .with_source_file_path(entry.deck),
+                .with_source_file_path(entry.deck)
+                .with_word(word.to_string()),
         )
     }
 }

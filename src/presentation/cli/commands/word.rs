@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use crate::domain::models::{DifficultyLevel, GameMode, SessionConfig};
+use crate::domain::services::audio_service::AudioServiceInterface;
 use crate::domain::services::session_manager_service::{SessionManager, SessionManagerInterface};
 use crate::domain::services::stage_builder_service::{StageRepository, StageRepositoryInterface};
 use crate::domain::services::word_challenge_generator::WordChallengeGenerator;
@@ -13,7 +14,11 @@ use crate::presentation::tui::{ScreenManagerFactory, ScreenManagerImpl, ScreenTy
 use crate::Result;
 use shaku::HasComponent;
 
-pub fn run_word_session(word_file: PathBuf, shuffle: bool) -> Result<()> {
+pub fn run_word_session(
+    word_file: PathBuf,
+    shuffle: bool,
+    audio_url: Option<String>,
+) -> Result<()> {
     let entries = WordListParser::parse_anki_tsv(&word_file)?;
     if entries.is_empty() {
         eprintln!("No valid word entries found in file.");
@@ -40,6 +45,11 @@ pub fn run_word_session(word_file: PathBuf, shuffle: bool) -> Result<()> {
         .expect("Failed to downcast StageRepository");
     stage_repo.set_mode(game_mode.clone());
     stage_repo.build_difficulty_indices();
+
+    if let Some(ref url) = audio_url {
+        let audio_service: &dyn AudioServiceInterface = container.resolve_ref();
+        audio_service.set_base_url(url.clone());
+    }
 
     let session_manager_trait: Arc<dyn SessionManagerInterface> = container.resolve();
 

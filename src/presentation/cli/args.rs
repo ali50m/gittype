@@ -86,6 +86,10 @@ pub enum Commands {
         /// Shuffle word order instead of sequential (TSV order, no repeats)
         #[arg(long)]
         shuffle: bool,
+
+        /// Base URL of word audio API (e.g., http://vps:8080)
+        #[arg(long, value_name = "URL")]
+        audio_url: Option<String>,
     },
     /// Select and practice with trending repositories from GitHub
     Trending {
