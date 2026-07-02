@@ -1,0 +1,24 @@
+name: Publish Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build gittype.exe
+    runs-on: windows-latest
+    steps:
+      - uses: ali50m/actions/my-check-out@main
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Upload artifact
+        uses: ali50m/actions/my-upload-artifact@main
+        with:
+          name: gittype
+          path: target/release/gittype.exe
+          if-no-files-found: error
