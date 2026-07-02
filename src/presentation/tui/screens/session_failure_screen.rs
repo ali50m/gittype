@@ -169,7 +169,14 @@ impl Screen for SessionFailureScreen {
         let is_word_mode = self.session_manager.is_word_mode();
 
         HeaderView::render(frame, chunks[1], &colors, is_word_mode);
-        ContentView::render(frame, chunks[3], &session_result, total_stages, &colors, is_word_mode);
+        ContentView::render(
+            frame,
+            chunks[3],
+            &session_result,
+            total_stages,
+            &colors,
+            is_word_mode,
+        );
         FooterView::render(frame, chunks[5], &colors, is_word_mode);
 
         Ok(())

@@ -10,12 +10,7 @@ use ratatui::{
 pub struct TypingDialogView;
 
 impl TypingDialogView {
-    pub fn render(
-        frame: &mut Frame,
-        skips_remaining: usize,
-        colors: &Colors,
-        is_word_mode: bool,
-    ) {
+    pub fn render(frame: &mut Frame, skips_remaining: usize, colors: &Colors, is_word_mode: bool) {
         // Calculate dialog size and position
         let area = frame.area();
         let dialog_width = 50.min(area.width - 4);
@@ -31,9 +26,15 @@ impl TypingDialogView {
         // Clear the area behind the dialog
         frame.render_widget(Clear, dialog_area);
 
-        let (title, choose, skip_label, no_skips_label, quit_label, back_label) = if is_word_mode
-        {
-            ("游戏选项", "选择一个操作:", "跳过", "无跳过次数", "退出", "返回游戏")
+        let (title, choose, skip_label, no_skips_label, quit_label, back_label) = if is_word_mode {
+            (
+                "游戏选项",
+                "选择一个操作:",
+                "跳过",
+                "无跳过次数",
+                "退出",
+                "返回游戏",
+            )
         } else {
             (
                 "Game Options",
@@ -72,10 +73,7 @@ impl TypingDialogView {
                         Style::default().fg(colors.text()),
                     )
                 } else {
-                    Span::styled(
-                        no_skips_label,
-                        Style::default().fg(colors.text_secondary()),
-                    )
+                    Span::styled(no_skips_label, Style::default().fg(colors.text_secondary()))
                 },
             ]),
             Line::from(vec![

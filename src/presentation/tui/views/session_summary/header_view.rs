@@ -39,7 +39,11 @@ impl HeaderView {
         .alignment(Alignment::Center);
         frame.render_widget(session_title, chunks[0]);
 
-        let youre_text = if is_word_mode { "你的评级:" } else { "YOU'RE:" };
+        let youre_text = if is_word_mode {
+            "你的评级:"
+        } else {
+            "YOU'RE:"
+        };
         let youre_label = Paragraph::new(Line::from(vec![Span::styled(
             youre_text,
             Style::default()

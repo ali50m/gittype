@@ -25,12 +25,31 @@ impl TypingFooterView {
         colors: &Colors,
         is_word_mode: bool,
     ) {
-        let (cpm_label, wpm_label, acc_label, err_label, streak_label, time_label, skips_label, title) =
-            if is_word_mode {
-                ("字/分", "词/分", "正确率", "错误", "连击", "用时", "跳过", "统计")
-            } else {
-                ("CPM", "WPM", "Accuracy", "Mistakes", "Streak", "Time", "Skips", "Metrics")
-            };
+        let (
+            cpm_label,
+            wpm_label,
+            acc_label,
+            err_label,
+            streak_label,
+            time_label,
+            skips_label,
+            title,
+        ) = if is_word_mode {
+            (
+                "字/分",
+                "词/分",
+                "正确率",
+                "错误",
+                "连击",
+                "用时",
+                "跳过",
+                "统计",
+            )
+        } else {
+            (
+                "CPM", "WPM", "Accuracy", "Mistakes", "Streak", "Time", "Skips", "Metrics",
+            )
+        };
 
         let metrics_line = if waiting_to_start || countdown_active {
             format!(

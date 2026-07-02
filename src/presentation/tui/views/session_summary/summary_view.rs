@@ -34,19 +34,28 @@ impl SummaryView {
 
         // Line 1: CPM | WPM | Time
         let line1 = Line::from(vec![
-            Span::styled(format!("{cpm_label}: "), Style::default().fg(colors.cpm_wpm())),
+            Span::styled(
+                format!("{cpm_label}: "),
+                Style::default().fg(colors.cpm_wpm()),
+            ),
             Span::styled(
                 format!("{:.0}", session_result.overall_cpm),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled(format!("{wpm_label}: "), Style::default().fg(colors.cpm_wpm())),
+            Span::styled(
+                format!("{wpm_label}: "),
+                Style::default().fg(colors.cpm_wpm()),
+            ),
             Span::styled(
                 format!("{:.0}", session_result.overall_wpm),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled(format!("{time_label}: "), Style::default().fg(colors.duration())),
+            Span::styled(
+                format!("{time_label}: "),
+                Style::default().fg(colors.duration()),
+            ),
             Span::styled(
                 format!("{:.1}s", session_result.session_duration.as_secs_f64()),
                 Style::default().fg(colors.text()),
@@ -60,19 +69,28 @@ impl SummaryView {
         let total_mistakes = session_result.valid_mistakes + session_result.invalid_mistakes;
 
         let line2 = Line::from(vec![
-            Span::styled(format!("{key_label}: "), Style::default().fg(colors.stage_info())),
+            Span::styled(
+                format!("{key_label}: "),
+                Style::default().fg(colors.stage_info()),
+            ),
             Span::styled(
                 format!("{}", total_keystrokes),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled(format!("{err_label}: "), Style::default().fg(colors.error())),
+            Span::styled(
+                format!("{err_label}: "),
+                Style::default().fg(colors.error()),
+            ),
             Span::styled(
                 format!("{}", total_mistakes),
                 Style::default().fg(colors.text()),
             ),
             Span::styled(" | ", Style::default().fg(colors.text())),
-            Span::styled(format!("{acc_label}: "), Style::default().fg(colors.accuracy())),
+            Span::styled(
+                format!("{acc_label}: "),
+                Style::default().fg(colors.accuracy()),
+            ),
             Span::styled(
                 format!("{:.1}%", session_result.overall_accuracy),
                 Style::default().fg(colors.text()),

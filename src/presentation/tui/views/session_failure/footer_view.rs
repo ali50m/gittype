@@ -24,9 +24,15 @@ impl FooterView {
 
         let nav_line = Line::from(vec![
             Span::styled("[R]", Style::default().fg(colors.success())),
-            Span::styled(format!(" {retry_label} | "), Style::default().fg(colors.text())),
+            Span::styled(
+                format!(" {retry_label} | "),
+                Style::default().fg(colors.text()),
+            ),
             Span::styled("[T]", Style::default().fg(colors.success())),
-            Span::styled(format!(" {title_label} | "), Style::default().fg(colors.text())),
+            Span::styled(
+                format!(" {title_label} | "),
+                Style::default().fg(colors.text()),
+            ),
             Span::styled("[ESC]", Style::default().fg(colors.error())),
             Span::styled(format!(" {exit_label}"), Style::default().fg(colors.text())),
         ]);

@@ -87,7 +87,11 @@ impl TypingHeaderView {
             )])
         };
 
-        let header_title = if is_word_mode { "单词练习" } else { "Challenge" };
+        let header_title = if is_word_mode {
+            "单词练习"
+        } else {
+            "Challenge"
+        };
 
         let header = Paragraph::new(vec![header_text]).block(
             Block::default()

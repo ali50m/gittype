@@ -140,7 +140,11 @@ impl ScoreView {
             .split(area);
 
         // Render score label
-        let score_label_text = if is_word_mode { "练习得分" } else { "SESSION SCORE" };
+        let score_label_text = if is_word_mode {
+            "练习得分"
+        } else {
+            "SESSION SCORE"
+        };
         let score_label = Paragraph::new(Line::from(vec![Span::styled(
             score_label_text,
             Style::default()

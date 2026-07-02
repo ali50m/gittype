@@ -256,7 +256,10 @@ impl SharingView {
         // Share option
         let share = Line::from(vec![
             Span::styled("[S]", Style::default().fg(colors.success())),
-            Span::styled(format!(" {share_label}"), Style::default().fg(colors.text())),
+            Span::styled(
+                format!(" {share_label}"),
+                Style::default().fg(colors.text()),
+            ),
         ]);
         frame.render_widget(
             Paragraph::new(share).alignment(Alignment::Center),

@@ -213,7 +213,11 @@ impl Screen for TotalSummaryScreen {
             let is_word_mode = self.session_manager.is_word_mode();
 
             // Title
-            let title_text = if is_word_mode { "=== 总览 ===" } else { "=== TOTAL SUMMARY ===" };
+            let title_text = if is_word_mode {
+                "=== 总览 ==="
+            } else {
+                "=== TOTAL SUMMARY ==="
+            };
             let title = Paragraph::new(Line::from(vec![Span::styled(
                 title_text,
                 Style::default()
