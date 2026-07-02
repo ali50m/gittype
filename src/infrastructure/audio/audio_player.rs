@@ -5,6 +5,8 @@ use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::RwLock;
 use std::time::Duration;
 
+const WORD_PAUSE: Duration = Duration::from_millis(350);
+
 pub enum AudioCommand {
     Play { word: String, base_url: String },
 }
@@ -44,20 +46,9 @@ impl AudioServiceInterface for AudioPlayer {
                             sink.stop();
                         }
 
-                        let url = format!("{}/audio/{}", base_url, word);
-                        let bytes = match client.get(&url).send().and_then(|r| r.bytes()) {
-                            Ok(b) => b,
-                            Err(_) => continue,
-                        };
-
-                        let sink = match Sink::try_new(&handle) {
-                            Ok(s) => s,
-                            Err(_) => continue,
-                        };
-                        let cursor = Cursor::new(bytes.to_vec());
-                        if let Ok(source) = Decoder::new(cursor) {
-                            sink.append(source);
-                            current_sink = Some(sink);
+                        match play_audio_text(&client, &handle, &base_url, &word) {
+                            Some(sink) => current_sink = Some(sink),
+                            None => play_pronunciation_tokens(&client, &handle, &base_url, &word),
                         }
                     }
                     Err(RecvTimeoutError::Timeout) => {
@@ -89,4 +80,86 @@ impl AudioServiceInterface for AudioPlayer {
             });
         }
     }
+}
+
+pub fn pronunciation_tokens(text: &str) -> Vec<String> {
+    text.split(is_pronunciation_separator)
+        .map(str::trim)
+        .filter(|token| !token.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn is_pronunciation_separator(ch: char) -> bool {
+    ch.is_whitespace()
+        || matches!(
+            ch,
+            '.' | ','
+                | ';'
+                | ':'
+                | '!'
+                | '?'
+                | '/'
+                | '\\'
+                | '|'
+                | '-'
+                | '_'
+                | '('
+                | ')'
+                | '['
+                | ']'
+                | '{'
+                | '}'
+                | '<'
+                | '>'
+                | '"'
+                | '\''
+                | '`'
+                | '~'
+                | '+'
+                | '='
+                | '*'
+                | '&'
+                | '#'
+                | '@'
+                | '^'
+                | '%'
+                | '$'
+        )
+}
+
+fn play_pronunciation_tokens(
+    client: &reqwest::blocking::Client,
+    handle: &rodio::OutputStreamHandle,
+    base_url: &str,
+    text: &str,
+) {
+    pronunciation_tokens(text)
+        .into_iter()
+        .filter_map(|token| play_audio_text(client, handle, base_url, &token))
+        .for_each(|sink| {
+            sink.sleep_until_end();
+            std::thread::sleep(WORD_PAUSE);
+        });
+}
+
+fn play_audio_text(
+    client: &reqwest::blocking::Client,
+    handle: &rodio::OutputStreamHandle,
+    base_url: &str,
+    text: &str,
+) -> Option<Sink> {
+    let encoded_text = urlencoding::encode(text);
+    let url = format!("{}/audio/{}", base_url, encoded_text);
+    let bytes = client
+        .get(&url)
+        .send()
+        .and_then(reqwest::blocking::Response::error_for_status)
+        .and_then(|response| response.bytes())
+        .ok()?;
+    let sink = Sink::try_new(handle).ok()?;
+    let cursor = Cursor::new(bytes.to_vec());
+    let source = Decoder::new(cursor).ok()?;
+    sink.append(source);
+    Some(sink)
 }

@@ -91,17 +91,11 @@ impl TypingFooterView {
         waiting_to_start: bool,
         countdown_active: bool,
         typing_core: &TypingCore,
-        chars_len: usize,
         colors: &Colors,
         is_word_mode: bool,
     ) {
-        let progress_percent = if waiting_to_start || countdown_active {
-            0
-        } else if chars_len > 0 {
-            (typing_core.current_position_to_display() as f32 / chars_len as f32 * 100.0) as u8
-        } else {
-            0
-        };
+        let progress_percent =
+            Self::progress_percent(waiting_to_start, countdown_active, typing_core);
 
         let title = if is_word_mode { "进度" } else { "Progress" };
         let progress_widget = Gauge::default()
@@ -116,5 +110,23 @@ impl TypingFooterView {
             .percent(progress_percent as u16)
             .label(format!("{}%", progress_percent));
         frame.render_widget(progress_widget, area);
+    }
+
+    pub fn progress_percent(
+        waiting_to_start: bool,
+        countdown_active: bool,
+        typing_core: &TypingCore,
+    ) -> u8 {
+        if waiting_to_start || countdown_active {
+            return 0;
+        }
+
+        let total_chars = typing_core.text_to_type().chars().count();
+        if total_chars == 0 {
+            return 0;
+        }
+
+        ((typing_core.current_position_to_type() as f32 / total_chars as f32) * 100.0).min(100.0)
+            as u8
     }
 }

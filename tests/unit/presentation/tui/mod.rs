@@ -23,6 +23,7 @@ pub mod trending_repository_list_view_tests;
 pub mod typing_animation_view_tests;
 pub mod typing_countdown_view_tests;
 pub mod typing_dialog_view_tests;
+pub mod typing_footer_view_tests;
 pub mod typing_header_view_tests;
 pub mod typing_screen_tests;
 pub mod typing_view_tests;

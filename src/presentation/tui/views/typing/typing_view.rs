@@ -116,7 +116,6 @@ impl TypingView {
             waiting_to_start,
             countdown_active,
             typing_core,
-            typing_core.text_to_display().chars().count(),
             colors,
             is_word_mode,
         );

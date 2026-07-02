@@ -1,3 +1,4 @@
+pub mod audio_player_tests;
 pub mod console_tests;
 pub mod database;
 pub mod git;
