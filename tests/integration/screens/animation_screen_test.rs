@@ -108,6 +108,10 @@ impl SessionManagerInterface for FakeSessionManager {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+
+    fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
+        Ok((1, 1))
+    }
 }
 
 fn create_animation_screen_with_fake_session_manager(

@@ -18,6 +18,10 @@ impl SessionManagerInterface for FakeSessionManager {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+
+    fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
+        Ok((1, 3))
+    }
 }
 
 fn default_colors() -> Colors {

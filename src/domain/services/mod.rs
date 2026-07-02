@@ -13,6 +13,8 @@ pub mod text_processor;
 pub mod theme_service;
 pub mod typing_core;
 pub mod version_service;
+pub mod word_challenge_generator;
+pub mod word_list_parser;
 
 pub use analytics_service::{AnalyticsData, AnalyticsService, LangStats, RepoStats};
 pub use repository_service::RepositoryService;

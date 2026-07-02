@@ -108,6 +108,7 @@ impl Step for FinalizingStep {
                     session_timeout: None,
                     difficulty: DifficultyLevel::Normal,
                     max_skips: 3,
+                    ..Default::default()
                 };
                 concrete_session_manager.set_config(session_config);
 

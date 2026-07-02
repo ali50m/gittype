@@ -11,3 +11,5 @@ mod stage_builder_service_tests;
 mod theme_manager_tests;
 mod typing_core_tests;
 mod version_service_tests;
+mod word_challenge_generator_tests;
+mod word_list_parser_tests;

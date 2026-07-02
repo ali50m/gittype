@@ -22,8 +22,9 @@ pub struct StageRepository {
     #[shaku(default)]
     built_stages: Mutex<Vec<Challenge>>,
     #[shaku(default)]
-    #[allow(dead_code)]
     current_index: Mutex<usize>,
+    #[shaku(default)]
+    current_sequential_challenge: Mutex<Option<Challenge>>,
     #[shaku(default)]
     difficulty_indices: Mutex<HashMap<DifficultyLevel, Vec<usize>>>,
     #[shaku(default)]
@@ -64,6 +65,7 @@ impl StageRepository {
             config: Mutex::new(StageConfig::default()),
             built_stages: Mutex::new(Vec::new()),
             current_index: Mutex::new(0),
+            current_sequential_challenge: Mutex::new(None),
             difficulty_indices: Mutex::new(HashMap::new()),
             indices_cached: Mutex::new(false),
             cached_challenges: Mutex::new(None),
@@ -85,6 +87,7 @@ impl StageRepository {
             config: Mutex::new(config),
             built_stages: Mutex::new(Vec::new()),
             current_index: Mutex::new(0),
+            current_sequential_challenge: Mutex::new(None),
             difficulty_indices: Mutex::new(HashMap::new()),
             indices_cached: Mutex::new(false),
             cached_challenges: Mutex::new(None),
@@ -128,6 +131,14 @@ impl StageRepository {
             match &config.game_mode {
                 GameMode::Normal => self.build_normal_stages(available_challenges, &config),
                 GameMode::TimeAttack => self.build_time_attack_stages(available_challenges),
+                GameMode::Sequential => {
+                    let target_count = config.max_stages.min(available_challenges.len());
+                    available_challenges
+                        .iter()
+                        .take(target_count)
+                        .cloned()
+                        .collect()
+                }
                 GameMode::Custom {
                     max_stages,
                     difficulty,
@@ -228,6 +239,12 @@ impl StageRepository {
                 format!("Normal Mode - {} random challenges", config.max_stages)
             }
             GameMode::TimeAttack => "Time Attack Mode - All challenges".to_string(),
+            GameMode::Sequential => {
+                format!(
+                    "Sequential Mode - {} challenges in order",
+                    config.max_stages
+                )
+            }
             GameMode::Custom {
                 max_stages,
                 time_limit,
@@ -244,6 +261,44 @@ impl StageRepository {
                 )
             }
         }
+    }
+
+    pub fn set_mode(&self, mode: GameMode) {
+        self.config.lock().unwrap().game_mode = mode;
+    }
+
+    pub fn get_current_sequential_challenge(&self) -> Option<Challenge> {
+        let mut cache = self.current_sequential_challenge.lock().unwrap();
+        if cache.is_none() {
+            let cached = self.cached_challenges.lock().unwrap();
+            if let Some(ref challenges) = *cached {
+                let index = *self.current_index.lock().unwrap();
+                if !challenges.is_empty() && index < challenges.len() {
+                    *cache = Some(challenges[index].clone());
+                }
+            }
+        }
+        cache.clone()
+    }
+
+    pub fn reset_sequential_state(&self) {
+        *self.current_index.lock().unwrap() = 0;
+        *self.current_sequential_challenge.lock().unwrap() = None;
+    }
+
+    pub fn advance_sequential_challenge(&self) -> Option<Challenge> {
+        let mut index = self.current_index.lock().unwrap();
+        *index += 1;
+        let cached = self.cached_challenges.lock().unwrap();
+        if let Some(ref challenges) = *cached {
+            if *index < challenges.len() {
+                let challenge = challenges[*index].clone();
+                *self.current_sequential_challenge.lock().unwrap() = Some(challenge.clone());
+                return Some(challenge);
+            }
+        }
+        *self.current_sequential_challenge.lock().unwrap() = None;
+        None
     }
 
     pub fn update_title_screen_data<B: ratatui::backend::Backend + Send + 'static>(

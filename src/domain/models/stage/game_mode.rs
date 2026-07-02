@@ -1,9 +1,10 @@
 use crate::domain::models::DifficultyLevel;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum GameMode {
     Normal,     // Random selection of few challenges
     TimeAttack, // Time limit with all challenges
+    Sequential, // Sequential order, no repeats, exhausts all challenges
     Custom {
         // Custom configuration
         max_stages: Option<usize>,

@@ -77,6 +77,16 @@ pub enum Commands {
         #[command(subcommand)]
         repo_command: RepoCommands,
     },
+    /// Start a word typing practice session
+    Word {
+        /// Path to Anki TSV word list file
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+
+        /// Shuffle word order instead of sequential (TSV order, no repeats)
+        #[arg(long)]
+        shuffle: bool,
+    },
     /// Select and practice with trending repositories from GitHub
     Trending {
         /// Programming language to filter trending repositories

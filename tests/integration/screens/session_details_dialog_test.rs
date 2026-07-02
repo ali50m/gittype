@@ -94,6 +94,10 @@ impl SessionManagerInterface for NonConcreteSessionManager {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+
+    fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
+        Ok((1, 1))
+    }
 }
 
 fn create_session_details_dialog_with_session_manager(

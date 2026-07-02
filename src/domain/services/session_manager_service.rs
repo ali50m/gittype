@@ -1,8 +1,8 @@
 use crate::domain::events::domain_events::DomainEvent;
 use crate::domain::events::EventBusInterface;
 use crate::domain::models::{
-    Challenge, DifficultyLevel, GitRepository, SessionAction, SessionConfig, SessionResult,
-    SessionState,
+    Challenge, DifficultyLevel, GameMode, GitRepository, SessionAction, SessionConfig,
+    SessionResult, SessionState,
 };
 use crate::domain::repositories::session_repository::{BestRecords, BestStatus};
 use crate::domain::repositories::SessionRepository;
@@ -47,11 +47,31 @@ pub struct SessionManager {
 
 pub trait SessionManagerInterface: shaku::Interface {
     fn as_any(&self) -> &dyn std::any::Any;
+    fn get_stage_info(&self) -> Result<(usize, usize)>;
 }
 
 impl SessionManagerInterface for SessionManager {
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+
+    fn get_stage_info(&self) -> Result<(usize, usize)> {
+        let state = self.state.lock().unwrap();
+        let current = match &*state {
+            SessionState::InProgress { current_stage, .. } => *current_stage,
+            SessionState::Completed { .. } => {
+                let completed = self
+                    .stage_results
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|sr| !sr.was_skipped && !sr.was_failed)
+                    .count();
+                completed.max(1).min(self.config.lock().unwrap().max_stages)
+            }
+            _ => 0,
+        };
+        Ok((current, self.config.lock().unwrap().max_stages))
     }
 }
 
@@ -205,6 +225,24 @@ impl SessionManager {
                     .filter(|sr| !sr.was_skipped && !sr.was_failed)
                     .count();
 
+                // Advance sequential challenge if in Sequential mode
+                {
+                    let config = self.config.lock().unwrap();
+                    if config.game_mode == GameMode::Sequential {
+                        drop(config);
+                        let stage_repo = self
+                            .stage_repository
+                            .as_any()
+                            .downcast_ref::<StageRepository>()
+                            .ok_or_else(|| {
+                                GitTypeError::TerminalError(
+                                    "Failed to downcast StageRepository".to_string(),
+                                )
+                            })?;
+                        stage_repo.advance_sequential_challenge();
+                    }
+                }
+
                 if completed_stages >= self.config.lock().unwrap().max_stages {
                     // Session completed - we have enough completed stages
                     self.add_session_to_total_tracker()?;
@@ -246,6 +284,20 @@ impl SessionManager {
                 *self.current_stage_tracker.lock().unwrap() = None;
                 self.stage_trackers.lock().unwrap().clear();
                 self.session_challenges.lock().unwrap().clear();
+
+                // Reset sequential challenge state in StageRepository
+                {
+                    let stage_repo = self
+                        .stage_repository
+                        .as_any()
+                        .downcast_ref::<StageRepository>()
+                        .ok_or_else(|| {
+                            GitTypeError::TerminalError(
+                                "Failed to downcast StageRepository".to_string(),
+                            )
+                        })?;
+                    stage_repo.reset_sequential_state();
+                }
 
                 // Reset session tracker
                 self.session_tracker.reset();
@@ -375,6 +427,7 @@ impl SessionManager {
     /// Get current challenge for the session
     pub fn get_current_challenge(&self) -> Result<Option<Challenge>> {
         if matches!(*self.state.lock().unwrap(), SessionState::InProgress { .. }) {
+            let config = self.config.lock().unwrap();
             let stage_repo = self
                 .stage_repository
                 .as_any()
@@ -382,7 +435,12 @@ impl SessionManager {
                 .ok_or_else(|| {
                     GitTypeError::TerminalError("Failed to downcast StageRepository".to_string())
                 })?;
-            Ok(stage_repo.get_challenge_for_difficulty(self.config.lock().unwrap().difficulty))
+
+            if config.game_mode == GameMode::Sequential {
+                Ok(stage_repo.get_current_sequential_challenge())
+            } else {
+                Ok(stage_repo.get_challenge_for_difficulty(config.difficulty))
+            }
         } else {
             Ok(None)
         }
@@ -551,7 +609,7 @@ impl SessionManager {
     /// Get the next challenge for the current stage using StageRepository
     pub fn get_next_challenge(&self) -> Result<Option<Challenge>> {
         if matches!(*self.state.lock().unwrap(), SessionState::InProgress { .. }) {
-            // Get challenge from StageRepository based on current difficulty setting
+            let config = self.config.lock().unwrap();
             let stage_repo = self
                 .stage_repository
                 .as_any()
@@ -559,7 +617,12 @@ impl SessionManager {
                 .ok_or_else(|| {
                     GitTypeError::TerminalError("Failed to downcast StageRepository".to_string())
                 })?;
-            Ok(stage_repo.get_challenge_for_difficulty(self.config.lock().unwrap().difficulty))
+
+            if config.game_mode == GameMode::Sequential {
+                Ok(stage_repo.get_current_sequential_challenge())
+            } else {
+                Ok(stage_repo.get_challenge_for_difficulty(config.difficulty))
+            }
         } else {
             Ok(None)
         }
@@ -691,6 +754,24 @@ impl SessionManager {
                 .lock()
                 .unwrap()
                 .push(stage_result.clone());
+
+            // Advance sequential challenge if in Sequential mode
+            {
+                let config = self.config.lock().unwrap();
+                if config.game_mode == GameMode::Sequential {
+                    drop(config);
+                    let stage_repo = self
+                        .stage_repository
+                        .as_any()
+                        .downcast_ref::<StageRepository>()
+                        .ok_or_else(|| {
+                            GitTypeError::TerminalError(
+                                "Failed to downcast StageRepository".to_string(),
+                            )
+                        })?;
+                    stage_repo.advance_sequential_challenge();
+                }
+            }
 
             // Return true to indicate new challenge should be generated
             let skips_remaining = self.get_skips_remaining()?;

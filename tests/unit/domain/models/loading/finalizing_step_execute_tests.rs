@@ -149,6 +149,7 @@ fn execute_builds_indices_and_resets_session_manager() {
         session_timeout: Some(Duration::from_secs(30)),
         difficulty: DifficultyLevel::Hard,
         max_skips: 1,
+        ..Default::default()
     });
 
     let mut context = create_context(

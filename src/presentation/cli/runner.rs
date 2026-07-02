@@ -3,7 +3,7 @@ use crate::infrastructure::logging::{setup_console_logging, setup_logging};
 use crate::presentation::cli::args::{CacheCommands, RepoCommands};
 use crate::presentation::cli::commands::{
     run_export, run_game_session, run_history, run_repo_clear, run_repo_list, run_repo_play,
-    run_stats, run_trending,
+    run_stats, run_trending, run_word_session,
 };
 use crate::presentation::cli::{Cli, Commands};
 use crate::presentation::di::AppModule;
@@ -27,6 +27,7 @@ pub fn run_cli(cli: Cli) -> Result<()> {
             run_cache_command(cache_command, challenge_repository)
         }
         Some(Commands::Repo { repo_command }) => run_repo_command(repo_command),
+        Some(Commands::Word { file, shuffle }) => run_word_session(file.clone(), *shuffle),
         Some(Commands::Trending {
             language,
             repo_name,

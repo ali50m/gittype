@@ -130,7 +130,9 @@ impl TypingScreen {
             *self.challenge.write().unwrap() = Some(challenge.clone());
             // Update git_repository from RepositoryStore
             *self.git_repository.write().unwrap() = self.repository_store.get_repository();
-            *self.waiting_to_start.write().unwrap() = true;
+
+            let is_word_mode = challenge.language.as_deref() == Some("word");
+            *self.waiting_to_start.write().unwrap() = !is_word_mode;
             *self.dialog_shown.write().unwrap() = false;
 
             // Publish ChallengeLoaded event
@@ -484,10 +486,36 @@ impl Screen for TypingScreen {
                 self.event_bus
                     .as_event_bus()
                     .publish(DomainEvent::StageFinalized);
-                // Publish NavigateTo event
-                self.event_bus
-                    .as_event_bus()
-                    .publish(NavigateTo::Replace(ScreenType::StageSummary));
+
+                let is_word_mode = self
+                    .challenge
+                    .read()
+                    .unwrap()
+                    .as_ref()
+                    .map(|c| c.language.as_deref() == Some("word"))
+                    .unwrap_or(false);
+
+                if is_word_mode {
+                    // Check if session is completed after finalize_current_stage
+                    let is_completed = self
+                        .session_manager
+                        .as_any()
+                        .downcast_ref::<SessionManager>()
+                        .and_then(|sm| sm.is_session_completed().ok())
+                        .unwrap_or(true);
+
+                    if !is_completed {
+                        self.load_current_challenge()?;
+                    } else {
+                        self.event_bus
+                            .as_event_bus()
+                            .publish(NavigateTo::Replace(ScreenType::Animation));
+                    }
+                } else {
+                    self.event_bus
+                        .as_event_bus()
+                        .publish(NavigateTo::Replace(ScreenType::StageSummary));
+                }
                 Ok(())
             }
             SessionState::Exit => {

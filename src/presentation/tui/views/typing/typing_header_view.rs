@@ -20,13 +20,34 @@ impl TypingHeaderView {
         git_repository: Option<&GitRepository>,
         colors: &Colors,
     ) {
+        Self::render_with_stage_info(frame, area, challenge, git_repository, colors, None);
+    }
+
+    pub fn render_with_stage_info(
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        challenge: Option<&Challenge>,
+        git_repository: Option<&GitRepository>,
+        colors: &Colors,
+        stage_info: Option<(usize, usize)>,
+    ) {
         let header_text = if let Some(challenge) = challenge {
+            let is_word_mode = challenge.language.as_deref() == Some("word");
+
+            let base_title = if is_word_mode {
+                let deck = challenge.source_file_path.as_deref().unwrap_or("Words");
+                match stage_info {
+                    Some((current, total)) => format!("{} {}/{}", deck, current, total),
+                    None => deck.to_string(),
+                }
+            } else {
+                challenge.get_display_title_with_repo(&git_repository.cloned())
+            };
+
             let difficulty_text = match &challenge.difficulty_level {
                 Some(difficulty) => format!("{:?}", difficulty),
                 None => "Unknown".to_string(),
             };
-
-            let base_title = challenge.get_display_title_with_repo(&git_repository.cloned());
 
             // Create spans for colored language display before difficulty
             let mut spans = vec![Span::styled(
@@ -34,24 +55,27 @@ impl TypingHeaderView {
                 Style::default().fg(colors.text_secondary()),
             )];
 
-            // Add language with color if available
-            if let Some(ref language) = challenge.language {
-                let display_name = Languages::get_display_name(Some(language));
+            // In word mode, skip language and difficulty tags
+            if !is_word_mode {
+                // Add language with color if available
+                if let Some(ref language) = challenge.language {
+                    let display_name = Languages::get_display_name(Some(language));
+                    spans.push(Span::styled(
+                        " ",
+                        Style::default().fg(colors.text_secondary()),
+                    ));
+                    spans.push(Span::styled(
+                        format!("[{}]", display_name),
+                        Style::default().fg(colors.info()),
+                    ));
+                }
+
+                // Add difficulty at the end
                 spans.push(Span::styled(
-                    " ",
+                    format!(" [{}]", difficulty_text),
                     Style::default().fg(colors.text_secondary()),
                 ));
-                spans.push(Span::styled(
-                    format!("[{}]", display_name),
-                    Style::default().fg(colors.info()),
-                ));
             }
-
-            // Add difficulty at the end
-            spans.push(Span::styled(
-                format!(" [{}]", difficulty_text),
-                Style::default().fg(colors.text_secondary()),
-            ));
 
             Line::from(spans)
         } else {

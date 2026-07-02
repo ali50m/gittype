@@ -20,6 +20,7 @@ pub mod total;
 pub mod typing;
 pub mod ui;
 pub mod version;
+pub mod word_entry;
 
 // Re-export main types for easy access
 pub use challenge::Challenge;

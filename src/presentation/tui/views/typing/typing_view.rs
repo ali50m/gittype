@@ -65,7 +65,15 @@ impl TypingView {
             .split(frame.area());
 
         // Header
-        TypingHeaderView::render(frame, chunks[0], challenge, git_repository, colors);
+        let stage_info = session_manager.get_stage_info().ok();
+        TypingHeaderView::render_with_stage_info(
+            frame,
+            chunks[0],
+            challenge,
+            git_repository,
+            colors,
+            stage_info,
+        );
 
         // Content
         let show_code = !(waiting_to_start || countdown_active);

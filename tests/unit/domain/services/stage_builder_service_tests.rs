@@ -628,6 +628,176 @@ fn test_set_cached_challenges_invalidates_indices() {
     assert_eq!(counts_after[0], 1);
 }
 
+// === Sequential mode ===
+
+#[test]
+fn test_sequential_get_current_initializes_from_index_zero() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(5));
+    let repo = create_repository(cs);
+    repo.set_mode(GameMode::Sequential);
+    repo.build_difficulty_indices();
+
+    let challenge = repo.get_current_sequential_challenge();
+    assert!(challenge.is_some());
+    assert_eq!(challenge.unwrap().id, "challenge-0");
+}
+
+#[test]
+fn test_sequential_advance_moves_to_next() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(5));
+    let repo = create_repository(cs);
+    repo.set_mode(GameMode::Sequential);
+    repo.build_difficulty_indices();
+
+    // First: get current (index 0)
+    let first = repo.get_current_sequential_challenge();
+    assert_eq!(first.unwrap().id, "challenge-0");
+
+    // Advance to index 1
+    let next = repo.advance_sequential_challenge();
+    assert!(next.is_some());
+    assert_eq!(next.as_ref().unwrap().id, "challenge-1");
+
+    // Current should now be index 1
+    let current = repo.get_current_sequential_challenge();
+    assert_eq!(current.unwrap().id, "challenge-1");
+}
+
+#[test]
+fn test_sequential_no_repeats_and_follows_order() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(5));
+    let repo = create_repository(cs);
+    repo.set_mode(GameMode::Sequential);
+    repo.build_difficulty_indices();
+
+    let mut seen = Vec::new();
+    let first = repo.get_current_sequential_challenge().unwrap();
+    seen.push(first.id.clone());
+
+    // Advance through all remaining challenges
+    for _ in 1..5 {
+        let next = repo.advance_sequential_challenge().unwrap();
+        seen.push(next.id.clone());
+    }
+
+    assert_eq!(
+        seen,
+        vec![
+            "challenge-0",
+            "challenge-1",
+            "challenge-2",
+            "challenge-3",
+            "challenge-4"
+        ]
+    );
+}
+
+#[test]
+fn test_sequential_exhausted_returns_none() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(2));
+    let repo = create_repository(cs);
+    repo.set_mode(GameMode::Sequential);
+    repo.build_difficulty_indices();
+
+    // Get index 0
+    assert!(repo.get_current_sequential_challenge().is_some());
+
+    // Advance to index 1
+    assert!(repo.advance_sequential_challenge().is_some());
+
+    // Advance past the end
+    assert!(repo.advance_sequential_challenge().is_none());
+
+    // Current should also be None after exhaustion
+    assert!(repo.get_current_sequential_challenge().is_none());
+}
+
+#[test]
+fn test_sequential_reset_clears_state() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(5));
+    let repo = create_repository(cs);
+    repo.set_mode(GameMode::Sequential);
+    repo.build_difficulty_indices();
+
+    // Advance a few times
+    repo.get_current_sequential_challenge();
+    repo.advance_sequential_challenge(); // index 1
+    repo.advance_sequential_challenge(); // index 2
+
+    assert_eq!(
+        repo.get_current_sequential_challenge().unwrap().id,
+        "challenge-2"
+    );
+
+    // Reset
+    repo.reset_sequential_state();
+
+    // After reset, current should be None until get_current re-initializes
+    assert!(repo.get_current_sequential_challenge().is_some());
+    assert_eq!(
+        repo.get_current_sequential_challenge().unwrap().id,
+        "challenge-0"
+    );
+}
+
+#[test]
+fn test_sequential_and_normal_modes_independent() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(5));
+    let config = StageConfig {
+        game_mode: GameMode::Normal,
+        max_stages: 3,
+        seed: Some(42),
+    };
+    let repo = create_repository_with_config(config, cs.clone());
+    repo.build_difficulty_indices();
+
+    // Normal mode: get_challenge_for_difficulty should work
+    let normal_result = repo.get_challenge_for_difficulty(DifficultyLevel::Normal);
+    assert!(normal_result.is_some());
+
+    // Sequential mode: get_current_sequential_challenge should start from index 0
+    repo.set_mode(GameMode::Sequential);
+    // Need to rebuild indices since the mode changed, but build_difficulty_indices
+    // is idempotent - the challenges haven't changed, just the mode.
+    let seq_result = repo.get_current_sequential_challenge();
+    assert!(seq_result.is_some());
+    assert_eq!(seq_result.unwrap().id, "challenge-0");
+}
+
+#[test]
+fn test_sequential_empty_challenges_returns_none() {
+    let (cs, rs, ss) = create_stores();
+    let repo = StageRepository::new(None, cs, rs, ss);
+    repo.set_mode(GameMode::Sequential);
+
+    assert!(repo.get_current_sequential_challenge().is_none());
+    assert!(repo.advance_sequential_challenge().is_none());
+}
+
+#[test]
+fn test_build_stages_sequential_returns_in_order() {
+    let cs = create_challenge_store();
+    cs.set_challenges(make_challenges(5));
+    let config = StageConfig {
+        game_mode: GameMode::Sequential,
+        max_stages: 3,
+        seed: None,
+    };
+    let repo = create_repository_with_config(config, cs);
+
+    let stages = repo.build_stages();
+    assert_eq!(stages.len(), 3);
+    assert_eq!(stages[0].id, "challenge-0");
+    assert_eq!(stages[1].id, "challenge-1");
+    assert_eq!(stages[2].id, "challenge-2");
+}
+
 // === as_any trait ===
 
 #[test]

@@ -40,6 +40,11 @@ impl Challenge {
         self
     }
 
+    pub fn with_source_file_path(mut self, source_file_path: String) -> Self {
+        self.source_file_path = Some(source_file_path);
+        self
+    }
+
     pub fn with_language(mut self, language: String) -> Self {
         self.language = Some(language);
         self

@@ -32,6 +32,10 @@ impl SessionManagerInterface for NonConcreteSessionManager {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+
+    fn get_stage_info(&self) -> gittype::Result<(usize, usize)> {
+        Ok((1, 1))
+    }
 }
 
 // Helper function to create StageSummaryScreen with all required dependencies
