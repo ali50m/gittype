@@ -3,6 +3,7 @@ use std::sync::Arc;
 use gittype::domain::events::EventBus;
 use gittype::domain::models::color_mode::ColorMode;
 use gittype::domain::models::theme::Theme;
+use gittype::domain::services::audio_service::AudioServiceInterface;
 use gittype::domain::services::session_manager_service::SessionManagerInterface;
 use gittype::domain::services::theme_service::{ThemeService, ThemeServiceInterface};
 use gittype::domain::stores::{RepositoryStore, RepositoryStoreInterface};
@@ -29,6 +30,19 @@ impl SessionManagerInterface for FakeSessionManager {
     }
 }
 
+struct FakeAudioService;
+
+impl AudioServiceInterface for FakeAudioService {
+    fn play_word(&self, _word: &str) {}
+    fn set_base_url(&self, _url: String) {}
+    fn has_base_url(&self) -> bool {
+        false
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
 fn create_screen() -> TypingScreen {
     let theme_service = Arc::new(ThemeService::new_for_test(
         Theme::default(),
@@ -38,11 +52,13 @@ fn create_screen() -> TypingScreen {
         Arc::new(RepositoryStore::new_for_test()) as Arc<dyn RepositoryStoreInterface>;
     let session_manager = Arc::new(FakeSessionManager) as Arc<dyn SessionManagerInterface>;
 
+    let audio_service = Arc::new(FakeAudioService) as Arc<dyn AudioServiceInterface>;
     TypingScreen::new(
         Arc::new(EventBus::new()),
         theme_service,
         repository_store,
         session_manager,
+        audio_service,
     )
 }
 

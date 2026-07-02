@@ -2,6 +2,7 @@ use gittype::domain::events::EventBusInterface;
 use gittype::domain::models::color_mode::ColorMode;
 use gittype::domain::models::theme::Theme;
 use gittype::domain::models::Challenge;
+use gittype::domain::services::audio_service::AudioServiceInterface;
 use gittype::domain::services::scoring::tracker::StageTracker;
 use gittype::domain::services::scoring::{
     SessionTracker, SessionTrackerInterface, TotalTracker, TotalTrackerInterface,
@@ -16,6 +17,19 @@ use gittype::presentation::tui::screens::typing_screen::TypingScreen;
 use gittype::presentation::tui::{Screen, ScreenDataProvider};
 use gittype::Result;
 use std::sync::Arc;
+
+struct FakeAudioService;
+
+impl AudioServiceInterface for FakeAudioService {
+    fn play_word(&self, _word: &str) {}
+    fn set_base_url(&self, _url: String) {}
+    fn has_base_url(&self) -> bool {
+        false
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
 
 pub struct MockTypingScreenDataProvider;
 
@@ -43,6 +57,7 @@ pub fn create_typing_screen_with_challenge(
                 language: Some("rust".to_string()),
                 comment_ranges: vec![],
                 difficulty_level: Some(gittype::domain::models::DifficultyLevel::Easy),
+                word: None,
             };
 
             let challenge_store = Arc::new(ChallengeStore::new_for_test())
@@ -111,6 +126,7 @@ pub fn create_typing_screen_with_challenge(
             language: Some("rust".to_string()),
             comment_ranges: vec![],
             difficulty_level: Some(gittype::domain::models::DifficultyLevel::Easy),
+            word: None,
         };
 
         let stage_tracker = StageTracker::new(code_content.to_string());
@@ -142,11 +158,13 @@ pub fn create_typing_screen_with_challenge(
         Theme::default(),
         ColorMode::Dark,
     )) as Arc<dyn ThemeServiceInterface>;
+    let audio_service = Arc::new(FakeAudioService) as Arc<dyn AudioServiceInterface>;
     let screen = TypingScreen::new(
         event_bus,
         theme_service,
         repository_store,
         session_manager_arc as Arc<dyn SessionManagerInterface>,
+        audio_service,
     );
 
     // Load challenge if provided

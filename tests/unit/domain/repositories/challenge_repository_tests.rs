@@ -295,6 +295,7 @@ fn load_challenges_uses_whole_file_when_lines_are_absent() {
         language: Some("rust".to_string()),
         comment_ranges: Vec::new(),
         difficulty_level: Some(DifficultyLevel::Easy),
+        word: None,
     };
 
     repository
@@ -338,6 +339,7 @@ fn load_challenges_returns_none_when_pointer_has_no_source_path() {
         language: None,
         comment_ranges: Vec::new(),
         difficulty_level: None,
+        word: None,
     };
 
     repository
@@ -378,6 +380,7 @@ fn load_challenges_returns_none_when_start_line_exceeds_file_length() {
         language: Some("rust".to_string()),
         comment_ranges: Vec::new(),
         difficulty_level: None,
+        word: None,
     };
 
     repository
@@ -418,6 +421,7 @@ fn load_challenges_returns_none_when_start_line_exceeds_end_line() {
         language: Some("rust".to_string()),
         comment_ranges: Vec::new(),
         difficulty_level: None,
+        word: None,
     };
 
     repository
@@ -459,6 +463,7 @@ fn load_challenges_returns_none_when_source_path_escapes_repo_root() {
         language: Some("rust".to_string()),
         comment_ranges: Vec::new(),
         difficulty_level: None,
+        word: None,
     };
 
     repository
