@@ -23,6 +23,7 @@ struct FakeAudioService;
 impl AudioServiceInterface for FakeAudioService {
     fn play_word(&self, _word: &str) {}
     fn set_base_url(&self, _url: String) {}
+    fn set_auth_token(&self, _token: String) {}
     fn has_base_url(&self) -> bool {
         false
     }

@@ -31,7 +31,13 @@ pub fn run_cli(cli: Cli) -> Result<()> {
             file,
             shuffle,
             audio_url,
-        }) => run_word_session(file.clone(), *shuffle, audio_url.clone()),
+            audio_token,
+        }) => run_word_session(
+            file.clone(),
+            *shuffle,
+            audio_url.clone(),
+            audio_token.clone(),
+        ),
         Some(Commands::Trending {
             language,
             repo_name,

@@ -18,6 +18,7 @@ pub fn run_word_session(
     word_file: PathBuf,
     shuffle: bool,
     audio_url: Option<String>,
+    audio_token: Option<String>,
 ) -> Result<()> {
     let entries = WordListParser::parse_anki_tsv(&word_file)?;
     if entries.is_empty() {
@@ -49,6 +50,11 @@ pub fn run_word_session(
     if let Some(ref url) = audio_url {
         let audio_service: &dyn AudioServiceInterface = container.resolve_ref();
         audio_service.set_base_url(url.clone());
+
+        let token = audio_token.or_else(|| std::env::var("GITTYPE_AUDIO_TOKEN").ok());
+        if let Some(token) = token.filter(|value| !value.trim().is_empty()) {
+            audio_service.set_auth_token(token);
+        }
     }
 
     let session_manager_trait: Arc<dyn SessionManagerInterface> = container.resolve();

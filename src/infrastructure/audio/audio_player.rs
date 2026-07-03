@@ -8,7 +8,11 @@ use std::time::Duration;
 const WORD_PAUSE: Duration = Duration::from_millis(350);
 
 pub enum AudioCommand {
-    Play { word: String, base_url: String },
+    Play {
+        word: String,
+        base_url: String,
+        auth_token: Option<String>,
+    },
 }
 
 #[derive(shaku::Component)]
@@ -16,6 +20,8 @@ pub enum AudioCommand {
 pub struct AudioPlayer {
     #[shaku(default)]
     base_url: RwLock<Option<String>>,
+    #[shaku(default)]
+    auth_token: RwLock<Option<String>>,
     #[shaku(default)]
     sender: RwLock<Option<mpsc::Sender<AudioCommand>>>,
 }
@@ -41,14 +47,30 @@ impl AudioServiceInterface for AudioPlayer {
 
             loop {
                 match rx.recv_timeout(Duration::from_millis(50)) {
-                    Ok(AudioCommand::Play { word, base_url }) => {
+                    Ok(AudioCommand::Play {
+                        word,
+                        base_url,
+                        auth_token,
+                    }) => {
                         if let Some(sink) = current_sink.take() {
                             sink.stop();
                         }
 
-                        match play_audio_text(&client, &handle, &base_url, &word) {
+                        match play_audio_text(
+                            &client,
+                            &handle,
+                            &base_url,
+                            auth_token.as_deref(),
+                            &word,
+                        ) {
                             Some(sink) => current_sink = Some(sink),
-                            None => play_pronunciation_tokens(&client, &handle, &base_url, &word),
+                            None => play_pronunciation_tokens(
+                                &client,
+                                &handle,
+                                &base_url,
+                                auth_token.as_deref(),
+                                &word,
+                            ),
                         }
                     }
                     Err(RecvTimeoutError::Timeout) => {
@@ -68,15 +90,21 @@ impl AudioServiceInterface for AudioPlayer {
         self.base_url.read().unwrap().is_some()
     }
 
+    fn set_auth_token(&self, token: String) {
+        *self.auth_token.write().unwrap() = Some(token);
+    }
+
     fn play_word(&self, word: &str) {
         let base_url = match self.base_url.read().unwrap().clone() {
             Some(url) => url,
             None => return,
         };
+        let auth_token = self.auth_token.read().unwrap().clone();
         if let Some(ref sender) = *self.sender.read().unwrap() {
             let _ = sender.send(AudioCommand::Play {
                 word: word.to_string(),
                 base_url,
+                auth_token,
             });
         }
     }
@@ -132,11 +160,12 @@ fn play_pronunciation_tokens(
     client: &reqwest::blocking::Client,
     handle: &rodio::OutputStreamHandle,
     base_url: &str,
+    auth_token: Option<&str>,
     text: &str,
 ) {
     pronunciation_tokens(text)
         .into_iter()
-        .filter_map(|token| play_audio_text(client, handle, base_url, &token))
+        .filter_map(|token| play_audio_text(client, handle, base_url, auth_token, &token))
         .for_each(|sink| {
             sink.sleep_until_end();
             std::thread::sleep(WORD_PAUSE);
@@ -147,12 +176,17 @@ fn play_audio_text(
     client: &reqwest::blocking::Client,
     handle: &rodio::OutputStreamHandle,
     base_url: &str,
+    auth_token: Option<&str>,
     text: &str,
 ) -> Option<Sink> {
     let encoded_text = urlencoding::encode(text);
     let url = format!("{}/audio/{}", base_url, encoded_text);
-    let bytes = client
-        .get(&url)
+    let mut request = client.get(&url);
+    if let Some(token) = auth_token {
+        request = request.bearer_auth(token);
+    }
+
+    let bytes = request
         .send()
         .and_then(reqwest::blocking::Response::error_for_status)
         .and_then(|response| response.bytes())

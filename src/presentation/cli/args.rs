@@ -90,6 +90,10 @@ pub enum Commands {
         /// Base URL of word audio API (e.g., http://vps:8080)
         #[arg(long, value_name = "URL")]
         audio_url: Option<String>,
+
+        /// Bearer token for word audio API (or use GITTYPE_AUDIO_TOKEN)
+        #[arg(long, value_name = "TOKEN")]
+        audio_token: Option<String>,
     },
     /// Select and practice with trending repositories from GitHub
     Trending {
