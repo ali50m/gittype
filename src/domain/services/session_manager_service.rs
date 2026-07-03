@@ -607,6 +607,14 @@ impl SessionManager {
         self.session_challenges.lock().unwrap().clear();
         *self.best_records_at_start.lock().unwrap() = None;
 
+        if let Some(stage_repo) = self
+            .stage_repository
+            .as_any()
+            .downcast_ref::<StageRepository>()
+        {
+            stage_repo.reset_sequential_state();
+        }
+
         // Reset session tracker
         self.session_tracker.reset();
     }

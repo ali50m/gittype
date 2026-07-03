@@ -1,6 +1,8 @@
 use gittype::domain::events::EventBus;
 use gittype::domain::events::EventBusInterface;
-use gittype::domain::models::{DifficultyLevel, SessionAction, SessionConfig, SessionState};
+use gittype::domain::models::{
+    Challenge, DifficultyLevel, GameMode, SessionAction, SessionConfig, SessionState,
+};
 use gittype::domain::services::scoring::{
     SessionTracker, SessionTrackerInterface, StageCalculator, StageInput, StageResult,
     StageTracker, TotalTracker, TotalTrackerInterface,
@@ -8,7 +10,9 @@ use gittype::domain::services::scoring::{
 use gittype::domain::services::session_manager_service::SessionManager;
 use gittype::domain::services::session_manager_service::SessionManagerInterface;
 use gittype::domain::services::stage_builder_service::{StageRepository, StageRepositoryInterface};
-use gittype::domain::stores::{ChallengeStore, RepositoryStore, SessionStore};
+use gittype::domain::stores::{
+    ChallengeStore, ChallengeStoreInterface, RepositoryStore, SessionStore,
+};
 use std::sync::Arc;
 
 #[allow(clippy::type_complexity)]
@@ -53,6 +57,13 @@ fn create_dummy_stage_result() -> StageResult {
     }
     tracker.record(StageInput::Finish);
     StageCalculator::calculate(&tracker)
+}
+
+fn create_word_challenge(id: &str, word: &str) -> Challenge {
+    Challenge::new(id.to_string(), word.to_string())
+        .with_language("word".to_string())
+        .with_word(word.to_string())
+        .with_difficulty_level(DifficultyLevel::Normal)
 }
 
 // ============================================
@@ -118,6 +129,54 @@ fn test_get_skips_used_initially_zero() {
 fn test_get_skips_remaining_initially_max() {
     let manager = create_session_manager();
     assert_eq!(manager.get_skips_remaining().unwrap(), 3);
+}
+
+#[test]
+fn test_reset_rewinds_sequential_challenges() {
+    let event_bus = Arc::new(EventBus::new()) as Arc<dyn EventBusInterface>;
+    let challenge_store = Arc::new(ChallengeStore::new_for_test());
+    challenge_store.set_challenges(vec![
+        create_word_challenge("one", "apple"),
+        create_word_challenge("two", "banana"),
+    ]);
+    let repository_store = Arc::new(RepositoryStore::new_for_test());
+    let session_store = Arc::new(SessionStore::new_for_test());
+    let stage_repository = Arc::new(StageRepository::new(
+        None,
+        challenge_store,
+        repository_store,
+        session_store,
+    ));
+    stage_repository.set_mode(GameMode::Sequential);
+    stage_repository.build_difficulty_indices();
+
+    let manager = SessionManager::new_with_dependencies(
+        event_bus,
+        stage_repository.clone() as Arc<dyn StageRepositoryInterface>,
+        Arc::new(SessionTracker::new_for_test()) as Arc<dyn SessionTrackerInterface>,
+        Arc::new(TotalTracker::new_for_test()) as Arc<dyn TotalTrackerInterface>,
+    );
+    manager
+        .initialize(Some(SessionConfig {
+            max_stages: 2,
+            game_mode: GameMode::Sequential,
+            difficulty: DifficultyLevel::Normal,
+            ..Default::default()
+        }))
+        .unwrap();
+    manager.reduce(SessionAction::Start).unwrap();
+
+    assert_eq!(manager.get_current_challenge().unwrap().unwrap().id, "one");
+
+    manager
+        .reduce(SessionAction::CompleteStage(create_dummy_stage_result()))
+        .unwrap();
+    assert_eq!(manager.get_current_challenge().unwrap().unwrap().id, "two");
+
+    manager.reset();
+    manager.reduce(SessionAction::Start).unwrap();
+
+    assert_eq!(manager.get_current_challenge().unwrap().unwrap().id, "one");
 }
 
 // ============================================

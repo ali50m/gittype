@@ -181,7 +181,7 @@ impl ScreenTransitionManager {
     fn handle_session_retry(session_manager: &Arc<dyn SessionManagerInterface>) -> Result<()> {
         // Record completed session, reset state, then start new session
         if let Some(sm) = session_manager.as_any().downcast_ref::<SessionManager>() {
-            sm.reset();
+            sm.reduce(SessionAction::Reset)?;
             sm.reduce(SessionAction::Start)?;
         }
         Ok(())
