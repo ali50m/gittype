@@ -33,7 +33,8 @@
           };
           cargoHash = "sha256-E1LKaiTClHmrF7zhGEj1rfELKryIiyVKIf/8Rozm1RQ=";
           nativeBuildInputs = [ pkgs.perl pkgs.pkg-config pkgs.git ];
-          buildInputs = [ pkgs.openssl ];
+          buildInputs = [ pkgs.openssl ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.alsa-lib ];
           doCheck = false;
         };
 
@@ -49,7 +50,8 @@
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
           nativeBuildInputs = [ pkgs.perl pkgs.pkg-config pkgs.git ];
-          buildInputs = [ pkgs.openssl ];
+          buildInputs = [ pkgs.openssl ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.alsa-lib ];
           doCheck = false;
         };
       });
@@ -62,7 +64,7 @@
             pkgs.pkg-config
             pkgs.perl
             pkgs.git
-          ];
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.alsa-lib ];
         };
       });
 
