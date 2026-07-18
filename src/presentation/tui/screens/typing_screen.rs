@@ -59,6 +59,7 @@ pub enum SessionState {
     ShowDialog,
     WaitingToStart,
     Countdown,
+    Retype,
 }
 
 impl TypingScreen {
@@ -175,6 +176,11 @@ impl TypingScreen {
         let waiting_to_start = *self.waiting_to_start.read().unwrap();
         let countdown_active = self.countdown.read().unwrap().is_active();
         let dialog_shown = *self.dialog_shown.read().unwrap();
+
+        if dialog_shown && matches!(key_event.code, KeyCode::Char('r' | 'R')) && self.is_word_mode()
+        {
+            return Ok(SessionState::Retype);
+        }
 
         match (waiting_to_start, countdown_active) {
             (true, _) => match key_event.code {
@@ -348,6 +354,14 @@ impl TypingScreen {
         } else {
             Ok(SessionState::Continue)
         }
+    }
+
+    fn is_word_mode(&self) -> bool {
+        self.challenge
+            .read()
+            .unwrap()
+            .as_ref()
+            .is_some_and(|challenge| challenge.language.as_deref() == Some("word"))
     }
 
     fn handle_tab_key(&self) -> Result<SessionState> {
@@ -564,6 +578,10 @@ impl Screen for TypingScreen {
                 Ok(())
             }
             SessionState::ShowDialog => Ok(()),
+            SessionState::Retype => {
+                self.load_current_challenge()?;
+                Ok(())
+            }
             _ => Ok(()),
         }
     }

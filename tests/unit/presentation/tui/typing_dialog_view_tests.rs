@@ -24,13 +24,13 @@ fn buffer_text(buffer: &Buffer) -> String {
         .join("\n")
 }
 
-fn render_dialog(skips_remaining: usize) -> String {
+fn render_dialog(skips_remaining: usize, is_word_mode: bool) -> String {
     let colors = default_colors();
     let backend = TestBackend::new(64, 16);
     let mut terminal = Terminal::new(backend).unwrap();
 
     terminal
-        .draw(|frame| TypingDialogView::render(frame, skips_remaining, &colors, false))
+        .draw(|frame| TypingDialogView::render(frame, skips_remaining, &colors, is_word_mode))
         .unwrap();
 
     buffer_text(terminal.backend().buffer())
@@ -38,8 +38,17 @@ fn render_dialog(skips_remaining: usize) -> String {
 
 #[test]
 fn render_with_no_skips_shows_disabled_skip_option() {
-    let output = render_dialog(0);
+    let output = render_dialog(0, false);
 
     assert!(output.contains("No skips remaining"));
     assert!(!output.contains("Skip challenge"));
+}
+
+#[test]
+fn word_mode_shows_retype_option() {
+    let output = render_dialog(1, true);
+
+    assert!(output.contains("[R]"));
+    assert!(output.contains('重'));
+    assert!(output.contains('词'));
 }

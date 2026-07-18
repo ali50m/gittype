@@ -14,7 +14,7 @@ impl TypingDialogView {
         // Calculate dialog size and position
         let area = frame.area();
         let dialog_width = 50.min(area.width - 4);
-        let dialog_height = 9;
+        let dialog_height = if is_word_mode { 10 } else { 9 };
 
         let dialog_area = Rect {
             x: (area.width - dialog_width) / 2,
@@ -47,7 +47,7 @@ impl TypingDialogView {
         };
 
         // Create dialog content
-        let dialog_lines = vec![
+        let mut dialog_lines = vec![
             Line::from(""),
             Line::from(vec![Span::styled(
                 choose,
@@ -76,6 +76,21 @@ impl TypingDialogView {
                     Span::styled(no_skips_label, Style::default().fg(colors.text_secondary()))
                 },
             ]),
+        ];
+
+        if is_word_mode {
+            dialog_lines.push(Line::from(vec![
+                Span::styled(
+                    "[R] ",
+                    Style::default()
+                        .fg(colors.info())
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled("重打本单词", Style::default().fg(colors.text())),
+            ]));
+        }
+
+        dialog_lines.extend([
             Line::from(vec![
                 Span::styled(
                     "[Q] ",
@@ -95,7 +110,7 @@ impl TypingDialogView {
                 Span::styled(back_label, Style::default().fg(colors.text())),
             ]),
             Line::from(""),
-        ];
+        ]);
 
         let dialog = Paragraph::new(dialog_lines)
             .block(

@@ -16,12 +16,30 @@ use gittype::domain::stores::{ChallengeStore, RepositoryStore, SessionStore};
 use gittype::presentation::tui::screens::typing_screen::TypingScreen;
 use gittype::presentation::tui::{Screen, ScreenDataProvider};
 use gittype::Result;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 struct FakeAudioService;
 
 impl AudioServiceInterface for FakeAudioService {
     fn play_word(&self, _word: &str) {}
+    fn set_base_url(&self, _url: String) {}
+    fn set_auth_token(&self, _token: String) {}
+    fn has_base_url(&self) -> bool {
+        false
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+struct RecordingAudioService {
+    played_words: Arc<Mutex<Vec<String>>>,
+}
+
+impl AudioServiceInterface for RecordingAudioService {
+    fn play_word(&self, word: &str) {
+        self.played_words.lock().unwrap().push(word.to_string());
+    }
     fn set_base_url(&self, _url: String) {}
     fn set_auth_token(&self, _token: String) {}
     fn has_base_url(&self) -> bool {
@@ -47,20 +65,52 @@ pub fn create_typing_screen_with_challenge(
     event_bus: Arc<dyn EventBusInterface>,
     code: Option<&str>,
 ) -> TypingScreen {
-    let (_challenge_store, repository_store, _session_store, stage_repository) =
-        if let Some(code_content) = code {
-            let challenge = Challenge {
-                id: "test_1".to_string(),
-                source_file_path: Some("test.rs".to_string()),
-                code_content: code_content.to_string(),
-                start_line: Some(1),
-                end_line: Some(code_content.lines().count()),
-                language: Some("rust".to_string()),
-                comment_ranges: vec![],
-                difficulty_level: Some(gittype::domain::models::DifficultyLevel::Easy),
-                word: None,
-            };
+    let challenge = code.map(|code_content| Challenge {
+        id: "test_1".to_string(),
+        source_file_path: Some("test.rs".to_string()),
+        code_content: code_content.to_string(),
+        start_line: Some(1),
+        end_line: Some(code_content.lines().count()),
+        language: Some("rust".to_string()),
+        comment_ranges: vec![],
+        difficulty_level: Some(gittype::domain::models::DifficultyLevel::Easy),
+        word: None,
+    });
 
+    create_typing_screen(event_bus, challenge, Arc::new(FakeAudioService)).0
+}
+
+pub fn create_word_typing_screen(
+    event_bus: Arc<dyn EventBusInterface>,
+    word: &str,
+) -> (TypingScreen, Arc<Mutex<Vec<String>>>) {
+    let played_words = Arc::new(Mutex::new(Vec::new()));
+    let audio_service = Arc::new(RecordingAudioService {
+        played_words: Arc::clone(&played_words),
+    });
+    let challenge = Challenge {
+        id: "word_1".to_string(),
+        source_file_path: Some("words.tsv".to_string()),
+        code_content: word.to_string(),
+        start_line: None,
+        end_line: None,
+        language: Some("word".to_string()),
+        comment_ranges: vec![],
+        difficulty_level: Some(gittype::domain::models::DifficultyLevel::Easy),
+        word: Some(word.to_string()),
+    };
+
+    let (screen, _) = create_typing_screen(event_bus, Some(challenge), audio_service);
+    (screen, played_words)
+}
+
+fn create_typing_screen(
+    event_bus: Arc<dyn EventBusInterface>,
+    challenge: Option<Challenge>,
+    audio_service: Arc<dyn AudioServiceInterface>,
+) -> (TypingScreen, Arc<SessionManager>) {
+    let (_challenge_store, repository_store, _session_store, stage_repository) =
+        if let Some(challenge) = challenge.as_ref() {
             let challenge_store = Arc::new(ChallengeStore::new_for_test())
                 as Arc<dyn gittype::domain::stores::ChallengeStoreInterface>;
             challenge_store.set_challenges(vec![challenge.clone()]);
@@ -117,20 +167,8 @@ pub fn create_typing_screen_with_challenge(
     let session_manager_arc = Arc::new(session_manager);
 
     // If code is provided, initialize and start session, then add to SessionManager for tracking
-    if let Some(code_content) = code {
-        let challenge = Challenge {
-            id: "test_1".to_string(),
-            source_file_path: Some("test.rs".to_string()),
-            code_content: code_content.to_string(),
-            start_line: Some(1),
-            end_line: Some(code_content.lines().count()),
-            language: Some("rust".to_string()),
-            comment_ranges: vec![],
-            difficulty_level: Some(gittype::domain::models::DifficultyLevel::Easy),
-            word: None,
-        };
-
-        let stage_tracker = StageTracker::new(code_content.to_string());
+    if let Some(challenge) = challenge.as_ref() {
+        let stage_tracker = StageTracker::new(challenge.code_content.clone());
 
         use gittype::domain::models::{DifficultyLevel, SessionConfig, SessionState};
         use std::time::Instant;
@@ -152,27 +190,30 @@ pub fn create_typing_screen_with_challenge(
         session_manager_arc.set_current_stage_tracker(stage_tracker.clone());
 
         // Add stage data for tracking
-        session_manager_arc.add_stage_data("test_stage".to_string(), stage_tracker, challenge);
+        session_manager_arc.add_stage_data(
+            "test_stage".to_string(),
+            stage_tracker,
+            challenge.clone(),
+        );
     }
 
     let theme_service = Arc::new(ThemeService::new_for_test(
         Theme::default(),
         ColorMode::Dark,
     )) as Arc<dyn ThemeServiceInterface>;
-    let audio_service = Arc::new(FakeAudioService) as Arc<dyn AudioServiceInterface>;
     let screen = TypingScreen::new(
         event_bus,
         theme_service,
         repository_store,
-        session_manager_arc as Arc<dyn SessionManagerInterface>,
+        session_manager_arc.clone() as Arc<dyn SessionManagerInterface>,
         audio_service,
     );
 
     // Load challenge if provided
-    if code.is_some() {
+    if challenge.is_some() {
         // init_with_data will call load_current_challenge internally
         let _ = screen.init_with_data(Box::new(()));
     }
 
-    screen
+    (screen, session_manager_arc)
 }

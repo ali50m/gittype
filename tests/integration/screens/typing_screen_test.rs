@@ -1,7 +1,8 @@
 use crate::integration::screens::mocks::typing_screen_mock::{
-    create_typing_screen_with_challenge, MockTypingScreenDataProvider,
+    create_typing_screen_with_challenge, create_word_typing_screen, MockTypingScreenDataProvider,
 };
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+use gittype::domain::events::domain_events::DomainEvent;
 use gittype::domain::events::presentation_events::NavigateTo;
 use gittype::domain::events::EventBus;
 use gittype::presentation::tui::screens::typing_screen::TypingScreen;
@@ -10,6 +11,55 @@ use std::sync::{Arc, Mutex};
 
 // Note: TypingScreen has complex state management (waiting_to_start, countdown, dialog_shown)
 // These tests cover different display states
+
+#[test]
+fn word_dialog_retypes_current_word_and_plays_pronunciation() {
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
+
+    let event_bus = Arc::new(EventBus::new());
+    let positions = Arc::new(Mutex::new(Vec::new()));
+    let captured_positions = Arc::clone(&positions);
+    event_bus.subscribe(move |event: &DomainEvent| {
+        if let DomainEvent::KeyPressed { position, .. } = event {
+            captured_positions.lock().unwrap().push(*position);
+        }
+    });
+    let (screen, played_words) = create_word_typing_screen(event_bus, "apple");
+
+    screen
+        .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()))
+        .unwrap();
+    screen
+        .handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::empty()))
+        .unwrap();
+
+    let backend = TestBackend::new(120, 40);
+    let mut terminal = Terminal::new(backend).unwrap();
+    terminal
+        .draw(|frame| screen.render_ratatui(frame).unwrap())
+        .unwrap();
+    let menu = terminal
+        .backend()
+        .buffer()
+        .content
+        .iter()
+        .map(|cell| cell.symbol())
+        .collect::<String>();
+    assert!(menu.contains("[R]"));
+    assert!(menu.contains('重'));
+    assert!(menu.contains('词'));
+
+    screen
+        .handle_key_event(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::empty()))
+        .unwrap();
+    screen
+        .handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()))
+        .unwrap();
+
+    assert_eq!(*positions.lock().unwrap(), vec![0, 0]);
+    assert_eq!(*played_words.lock().unwrap(), vec!["apple", "apple"]);
+}
 
 // Snapshot test: waiting state with challenge loaded
 screen_snapshot_test!(
